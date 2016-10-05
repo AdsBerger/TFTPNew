@@ -1,30 +1,19 @@
 import java.net.*;
-import java.awt.List;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.awt.*;
-import javax.swing.*;
-import java.lang.*;
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
-
 import javax.swing.JOptionPane;
 
-@SuppressWarnings("unused")
 public class TFTPClient {
 	
-	private DatagramPacket sendPacket,receivePacket;
+	private DatagramPacket sendPacket;
 	private DatagramSocket sendingSocket,transferSocket;
 	private static String filename;
 	private static int sendPort,listenPort;
@@ -113,10 +102,40 @@ public class TFTPClient {
 		System.out.println("Client packet is sent");
 		sendingSocket.close();
 		
+		if(readRequest==true){
+			readFile();
+		}
+		else if(writeRequest==true){
+			//write file
+		}
+		
 		
 	}
 	
-	
+	private void ackSend(byte blockNumber){
+		byte[] temp ={0,4,0,blockNumber};//feel free to change variable names to make it easier
+		DatagramPacket sendP=null;
+		
+		try {
+			sendP=new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),listenPort);
+		} catch (UnknownHostException e) {
+			System.out.println("Creating Datagram failed");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		System.out.println("Sending Acknowledgment");
+		
+		try {
+			transferSocket.send(sendP);
+		} catch (IOException e) {
+			System.out.println("Acknowledgment sending failed");
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
+		System.out.println("Acknowledgment was sent sucessfully!");
+		
+	}
 	
 	private void readFile(){
 		boolean loop=true;
@@ -188,31 +207,6 @@ public class TFTPClient {
 			System.out.print(j);
 		}
 		return buffer;
-		
-	}
-	
-	private void ackSend(byte blockNumber){
-		byte[] temp ={0,4,0,blockNumber};//feel free to change variable names to make it easier
-		DatagramPacket sendP=null;
-		
-		try {
-			sendP=new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),listenPort);
-		} catch (UnknownHostException e) {
-			System.out.println("Creating Datagram failed");
-			e.printStackTrace();
-			System.exit(1);
-		}
-		System.out.println("Sending Acknowledgment");
-		
-		try {
-			transferSocket.send(sendP);
-		} catch (IOException e) {
-			System.out.println("Acknowledgment sending failed");
-			e.printStackTrace();
-			System.exit(1);
-		}
-		
-		System.out.println("Acknowledgment was sent sucessfully!");
 		
 	}
 	
