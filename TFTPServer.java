@@ -52,7 +52,6 @@ public class TFTPServer {
 					else if(keyPress.equals("E")){
 						System.out.println("SERVER EXITING");
 						System.exit(0);
-						
 					}
 				}
 				
@@ -60,8 +59,9 @@ public class TFTPServer {
 				
 			}
 		}.start();
-		
 	}
+
+	
 	public void receiveTFTPRequest(){
 		int j;
 		int i = 0;
