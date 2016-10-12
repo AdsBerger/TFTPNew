@@ -1,6 +1,7 @@
 import java.net.*;
 import java.awt.List;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,16 +17,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileNotFoundException;
 
-@SuppressWarnings("unused")
+
 public class TFTPServer {
 	
 	private boolean writeReq,readReq;
-	
-	public static final byte[] readByte ={0,3,0,1};
-	public static final byte[] writeByte={0,4,0,0};
-	
-	private DatagramSocket receivingSocket,sendingSocket;
-	private DatagramPacket receivingPacket,sendingPacket;
+	private DatagramSocket receivingSocket;
+	private DatagramPacket receivingPacket;
 	
 	
 	public TFTPServer(){
@@ -48,10 +45,13 @@ public class TFTPServer {
 					if(keyPress.equals("e")){
 						System.out.println("SERVER EXITING");
 						System.exit(0);
+						exit.close();
+						
 					}
 					else if(keyPress.equals("E")){
 						System.out.println("SERVER EXITING");
 						System.exit(0);
+						exit.close();
 					}
 				}
 				
@@ -141,14 +141,237 @@ public class TFTPServer {
 				
 				
 				mode = new String(temp,i,j-i-1);
-				
+				new clientConnectionThread(receivingPacket,readReq,writeReq,69).start();
 			}
 			
 		}
 	}
 	
 	
-	
-	
 
+
+	class clientConnectionThread extends Thread{
+
+		
+		
+		private DatagramSocket sendReceive;
+		private String file_Name;
+		private boolean read,write;
+		private int sendBackPort;
+		
+		public clientConnectionThread(DatagramPacket dp,boolean read,boolean write,int sendBackPort){
+			this.read = read;
+			this.write =write;
+			this.sendBackPort=sendBackPort;
+			byte[] temp = dp.getData();
+			
+			String tempToString = new String(temp);
+			
+			
+			try {
+				this.sendReceive=new DatagramSocket();
+				
+			} catch (SocketException e) {
+				System.out.println("Datagram Socket creation failure");
+				e.printStackTrace();
+				System.exit(1);
+				
+			}
+			
+			file_Name =tempToString.substring(2, temp.length-1);//temp.length-1 isnt the correct length it should stop -1 when it reaches a zero
+																//that seperates the mode from the filename
+		}
+		
+		public void run(){//spawns new thread
+			
+			
+			if(read==true){
+				InputStream in =null;
+				File temp_file=new File(file_Name);
+				if(temp_file.exists()){
+					try {
+						in =new FileInputStream(temp_file);
+					} catch (FileNotFoundException e) {
+						System.out.println("Failure in read file name");
+						e.printStackTrace();
+					}
+					
+				}
+				else{//file doesn't exist, so can't do read
+					System.out.println("File does not exist");
+					System.exit(1);
+				}
+				ArrayList<Byte> temp;
+				byte[] bits = new byte [4];
+				byte[] data = new byte[512];
+				
+				bits[0]=0;
+				bits[1]=3;
+				bits[2]=0;
+				bits[3]=1;
+				
+				try {
+					while(in.read(data)!=-1){//readRequest
+						int i=0;
+						temp = new ArrayList<Byte>();
+						while(i<=4){
+						for(byte j: bits){
+							temp.add(j);
+							
+						}
+						}
+						for(byte j:data){
+							temp.add(j);
+						}
+						Byte[] temp2 = temp.toArray(new Byte[516]);
+						
+						//test purposes only
+						System.out.println("");
+						System.out.println("Printing contents of read request: ");
+						for(byte j:temp2){
+							System.out.println(j);
+						}
+						System.out.println("");//new line
+						sendDataPack(temp2);
+						receiveAck();
+					}//end while loop
+						
+					
+				} catch (IOException e) {
+					System.out.println("Data read failure");
+					e.printStackTrace();
+					System.exit(1);
+				}
+				try {
+					in.close();
+				} catch (IOException e) {
+					System.out.println("Input Stream closing failed");
+					e.printStackTrace();
+				}
+				System.out.println("FILE TRANSFERED SUCCESSFULLY");
+				this.sendReceive.close();
+				
+				
+			}//end read==true
+			
+			else if(write==true){//write request
+				
+				
+			}
+			
+		}//end of run();
+						
+		private byte [] receiveDataPack(){//returns byte array containing data from packet
+			byte[] temp = new byte[516];
+			DatagramPacket receivingPacket = null;
+			
+			try {
+				receivingPacket= new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),sendBackPort);
+			} catch (UnknownHostException e) {
+				System.out.println("Receiving packet creation failed");
+				e.printStackTrace();
+			}
+			try {
+				sendReceive.receive(receivingPacket);
+			} catch (IOException e) {
+				System.out.println("Receiving Packet failure");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			temp = receivingPacket.getData();
+			
+			System.out.println("Received data packet containing: ");
+			for(byte j:temp){
+				System.out.print(j);
+			}
+			System.out.println(" ");
+			
+			return temp;
+			
+		}//end receiveDataPack
+		
+		private byte[] receiveAck(){
+			byte[] temp = new byte[4];
+			DatagramPacket receivingPacket=null;
+			
+			
+			try {
+				receivingPacket=new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),sendBackPort);
+			} catch (UnknownHostException e) {
+				System.out.println("Receiving packet creation failure");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			
+			try {
+				sendReceive.receive(receivingPacket);
+			} catch (IOException e) {
+				System.out.println("Failed to receive packet");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			temp=receivingPacket.getData();
+			
+			System.out.println("Received Ackowledgment containing: ");
+			for(byte j : temp){
+				System.out.print(j);
+			}
+			
+			
+			
+			return temp;
+		}
+	
+		private void sendDataPack(Byte[] data){
+			
+			byte[] temp = new byte[516];
+			int i=0;
+			
+			for(i=0;i<data.length;i++){
+				if(data[i] !=null);
+				temp[i]=data[i].byteValue();
+			}
+			DatagramPacket sendingPacket = null;
+			
+			try {
+				sendingPacket = new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),this.sendBackPort);
+			} catch (UnknownHostException e) {
+				System.out.println("Failure in creating datagramPacket");				
+				e.printStackTrace();
+			}
+			try {
+				System.out.println("Sending packet from:"+InetAddress.getLocalHost()+" to port"+this.sendBackPort+"Containing: ");
+			} catch (UnknownHostException e) {
+				System.out.println("Failure in locating locaHost address");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			for(byte j:temp){
+				System.out.print(j);
+				
+			}
+			try {
+				sendReceive.send(sendingPacket);
+			} catch (IOException e) {
+				System.out.println("Could not send packet");
+				e.printStackTrace();
+				System.exit(1);
+			}
+			System.out.println("Packet was sucesffully sent to port: "+this.sendBackPort);
+			
+			
+				
+			}//end sendDataPacket
+	
+	}//end thread class
+
+
+
+
+public static void main(String args[]){
+	
+	TFTPServer s = new TFTPServer();
+	s.receiveTFTPRequest();
 }
+}
+
