@@ -69,6 +69,7 @@ public class TFTPServer {
 		byte[] temp;
 		readReq=false;
 		writeReq=false;
+		
 		while(true){
 			temp = new byte[100];
 			receivingPacket= new DatagramPacket(temp,temp.length);
@@ -141,7 +142,7 @@ public class TFTPServer {
 				
 				
 				mode = new String(temp,i,j-i-1);
-				new clientConnectionThread(receivingPacket,readReq,writeReq,receivingPacket.getPort).start(); //ROBERT, I changed this from 69, the clientconnectionThread shouldn't be sending data to port 69, it should be sent to the port that the client sent the request FROM (not TO)
+				new clientConnectionThread(receivingPacket,readReq,writeReq,receivingPacket.getPort() ).start(); //ROBERT, I changed this from 69, the clientconnectionThread shouldn't be sending data to port 69, it should be sent to the port that the client sent the request FROM (not TO)
 			}
 			
 		}
@@ -162,7 +163,7 @@ public class TFTPServer {
 		public clientConnectionThread(DatagramPacket dp,boolean read,boolean write,int sendBackPort){
 			this.read = read;
 			this.write =write;
-			this.sendBackPort=sendBackPort; //I don't think sendBackPort is the right name for this. This port is being used as the port that we're sending datagram packets to
+			this.sendBackPort = sendBackPort; //I don't think sendBackPort is the right name for this. This port is being used as the port that we're sending datagram packets to
 			byte[] temp = dp.getData();
 			
 			String tempToString = new String(temp);
@@ -185,7 +186,7 @@ public class TFTPServer {
 		public void run(){//spawns new thread
 			
 			
-			if(read==true){
+			if(read == true){
 				InputStream in =null;
 				File temp_file=new File(file_Name);
 				if(temp_file.exists()){
@@ -297,7 +298,7 @@ public class TFTPServer {
 		}//end receiveDataPack
 		
 		private byte[] receiveAck(){ // We should probably send the dataBlockNum to compare against
-			byte[] temp = new byte[10]; //oversized for safety
+			byte[] temp = new byte[10]; //over sized for safety
 			DatagramPacket receivingPacket=null;
 			
 			
@@ -319,7 +320,7 @@ public class TFTPServer {
 			temp=receivingPacket.getData();
 			
 			System.out.println("Received Ackowledgment containing: ");
-				System.out.print(j);
+				System.out.println(j);
 			}
 			
 			//TODO - probably later but validate this ack packet based on block number
@@ -339,13 +340,13 @@ public class TFTPServer {
 			DatagramPacket sendingPacket = null;
 			
 			try {
-				sendingPacket = new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),this.sendBackPort);
+				sendingPacket = new DatagramPacket(temp, temp.length, InetAddress.getLocalHost(), this.sendBackPort);
 			} catch (UnknownHostException e) {
 				System.out.println("Failure in creating datagramPacket");				
 				e.printStackTrace();
 			}
 			try {
-				System.out.println("Sending packet from:"+InetAddress.getLocalHost()+" to port"+this.sendBackPort+"Containing: ");
+				System.out.println("Sending packet from:" + InetAddress.getLocalHost() + " to port"+ this.sendBackPort + "Containing: ");
 			} catch (UnknownHostException e) {
 				System.out.println("Failure in locating locaHost address");
 				e.printStackTrace();
@@ -362,7 +363,7 @@ public class TFTPServer {
 				e.printStackTrace();
 				System.exit(1);
 			}
-			System.out.println("Packet was sucesffully sent to port: "+this.sendBackPort);
+			System.out.println("Packet was sucesffully sent to port: "+ this.sendBackPort);
 			
 			
 				
@@ -378,5 +379,6 @@ public static void main(String args[]){
 	TFTPServer s = new TFTPServer();
 	s.receiveTFTPRequest();
 }
+
 }
 
