@@ -141,7 +141,7 @@ public class TFTPServer {
 				
 				
 				mode = new String(temp,i,j-i-1);
-				new clientConnectionThread(receivingPacket,readReq,writeReq,69).start();
+				new clientConnectionThread(receivingPacket,readReq,writeReq,receivingPacket.getPort).start(); //ROBERT, I changed this from 69, the clientconnectionThread shouldn't be sending data to port 69, it should be sent to the port that the client sent the request FROM (not TO)
 			}
 			
 		}
