@@ -23,7 +23,8 @@ public class TFTPClient {
 	
 	
 	public void TFTPclient(){
-		listenPort=69;
+		listenPort=69; //I don't think this should be called listenPort - the client sends data to port 69
+		//TODO in test mode, listenPort is 23, we send to the intermediate server and not the server server
 		try{
 		sendingSocket = new DatagramSocket();
 		transferSocket = new DatagramSocket();
@@ -60,13 +61,13 @@ public class TFTPClient {
 		byte[] send = new byte[100];
 		System.out.println("Client is creating a send request...");
 		send[0]=0;//first byte is 0 regardless of read/write
-		if(readRequest==true){
+		if(readRequest){
 			send[1]=1;
 			System.out.println("Read Request is valid...");
 			filename=readFileName;
 			
 			}
-		else if(writeRequest==true){
+		else if(writeRequest){
 			send[1]=2;
 			System.out.println("Write Request is valid...");
 			filename=writeFileName;
@@ -90,7 +91,7 @@ public class TFTPClient {
 		}
 		System.out.println("Client is sending packet");
 		
-		System.out.println("To server: "+ sendPacket.getAddress() );//need to make this in verbose mode only i think? or maybe test/normal
+		System.out.println("To server: "+ sendPacket.getAddress() );//need to make this in verbose mode only
 		
 		try {
 			transferSocket.send(sendPacket);
@@ -155,6 +156,7 @@ public class TFTPClient {
 			System.out.println("Output Stream failure");
 			e.printStackTrace();
 			System.exit(1);
+			//ITERATION 2
 		}
 		
 		try {
@@ -163,8 +165,9 @@ public class TFTPClient {
 			System.out.println("Output stream failed to write");
 			e.printStackTrace();
 			System.exit(1);
+			//ITERATION 2
 		}
-		if(fileInfo.length<512){//can't write less than 512 bytes.
+		if(fileInfo.length<512){//can't write less than 512 bytes. TODO - you have to be able to? The last packet is < 512 bytes
 			loop=false;
 			
 		}
@@ -217,7 +220,7 @@ public class TFTPClient {
 		TFTPClient c1 = new TFTPClient();
 		c1.promptRequest();
 		c1.buildSendRequest();
-		
+		//TODO is this complete? Does buildSendRequest() do everything related to the transfer?		
 	}
 	
 

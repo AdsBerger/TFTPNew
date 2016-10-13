@@ -162,7 +162,7 @@ public class TFTPServer {
 		public clientConnectionThread(DatagramPacket dp,boolean read,boolean write,int sendBackPort){
 			this.read = read;
 			this.write =write;
-			this.sendBackPort=sendBackPort;
+			this.sendBackPort=sendBackPort; //I don't think sendBackPort is the right name for this. This port is being used as the port that we're sending datagram packets to
 			byte[] temp = dp.getData();
 			
 			String tempToString = new String(temp);
@@ -200,6 +200,7 @@ public class TFTPServer {
 				else{//file doesn't exist, so can't do read
 					System.out.println("File does not exist");
 					System.exit(1);
+					//ITERATION 2
 				}
 				ArrayList<Byte> temp;
 				byte[] bits = new byte [4];
@@ -211,15 +212,16 @@ public class TFTPServer {
 				bits[3]=1;
 				
 				try {
-					while(in.read(data)!=-1){//readRequest
+					for(int dataBlockNumber = 1; in.read(data)!=-1; ++dataBlockNumber){//readRequest
 						int i=0;
+						bits[2] = (dataBlockNumber && (0xFF << 8)); //the datablocknumber has to change every time there's a new block
+						bits[3] = (dataBlockNumber && (0xFF)); 
 						temp = new ArrayList<Byte>();
-						while(i<=4){
+						//while(i<=4){ //What's this while loop doing here?
 						for(byte j: bits){
 							temp.add(j);
-							
 						}
-						}
+						//}
 						for(byte j:data){
 							temp.add(j);
 						}
@@ -233,20 +235,22 @@ public class TFTPServer {
 						}
 						System.out.println("");//new line
 						sendDataPack(temp2);
-						receiveAck();
-					}//end while loop
-						
+						receiveAck(); //assume this works for now
+					}//end for loop
+					//TODO at some point after this we have to check if the last byte[] sent was less than 512, if it wasn't then we have to send a datapacket with data of length 0	
 					
 				} catch (IOException e) {
 					System.out.println("Data read failure");
 					e.printStackTrace();
 					System.exit(1);
+					//ITERATION 2
 				}
 				try {
 					in.close();
 				} catch (IOException e) {
 					System.out.println("Input Stream closing failed");
 					e.printStackTrace();
+					//ITERATION 2 (I think?)
 				}
 				System.out.println("FILE TRANSFERED SUCCESSFULLY");
 				this.sendReceive.close();
@@ -255,7 +259,7 @@ public class TFTPServer {
 			}//end read==true
 			
 			else if(write==true){//write request
-				
+				//TODO - everything in here
 				
 			}
 			
@@ -270,6 +274,7 @@ public class TFTPServer {
 			} catch (UnknownHostException e) {
 				System.out.println("Receiving packet creation failed");
 				e.printStackTrace();
+				//LATER
 			}
 			try {
 				sendReceive.receive(receivingPacket);
@@ -277,6 +282,7 @@ public class TFTPServer {
 				System.out.println("Receiving Packet failure");
 				e.printStackTrace();
 				System.exit(1);
+				//ITERATION 2 (possibly?)
 			}
 			temp = receivingPacket.getData();
 			
@@ -290,13 +296,13 @@ public class TFTPServer {
 			
 		}//end receiveDataPack
 		
-		private byte[] receiveAck(){
-			byte[] temp = new byte[4];
+		private byte[] receiveAck(){ // We should probably send the dataBlockNum to compare against
+			byte[] temp = new byte[10]; //oversized for safety
 			DatagramPacket receivingPacket=null;
 			
 			
 			try {
-				receivingPacket=new DatagramPacket(temp,temp.length,InetAddress.getLocalHost(),sendBackPort);
+				receivingPacket=new DatagramPacket(temp,temp.length);
 			} catch (UnknownHostException e) {
 				System.out.println("Receiving packet creation failure");
 				e.printStackTrace();
@@ -313,18 +319,17 @@ public class TFTPServer {
 			temp=receivingPacket.getData();
 			
 			System.out.println("Received Ackowledgment containing: ");
-			for(byte j : temp){
 				System.out.print(j);
 			}
 			
-			
-			
+			//TODO - probably later but validate this ack packet based on block number
+
 			return temp;
 		}
 	
 		private void sendDataPack(Byte[] data){
 			
-			byte[] temp = new byte[516];
+			byte[] temp = new byte[516]; //not sure why this is done but doesn't really matter
 			int i=0;
 			
 			for(i=0;i<data.length;i++){
